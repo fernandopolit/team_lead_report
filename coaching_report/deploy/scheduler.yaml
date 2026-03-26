@@ -1,0 +1,33 @@
+# Cloud Scheduler configuration for the CX Coaching Report.
+#
+# This file documents the scheduler job settings used by scripts/setup_gcp.sh.
+# Cloud Scheduler does not support `gcloud scheduler jobs replace` from YAML,
+# so the setup script issues the gcloud command directly using these values.
+#
+# To update the schedule after initial setup:
+#   gcloud scheduler jobs update http cx-coaching-report-daily \
+#     --schedule="0 7 * * 1-5" \
+#     --time-zone="Europe/Madrid" \
+#     --location=europe-west1
+
+name: cx-coaching-report-daily
+
+# Cron schedule — runs Mon–Fri at 07:00 Madrid time.
+# Common alternatives:
+#   "0 6 * * 1-5"   → 06:00 Mon–Fri
+#   "0 7 * * *"     → 07:00 every day including weekends
+#   "0 7 * * 1"     → 07:00 Mondays only (weekly report)
+schedule: "0 7 * * 1-5"
+
+timezone: Europe/Madrid
+location: europe-west1
+
+target:
+  # Cloud Scheduler triggers the Cloud Run Job via the Run API
+  type: cloud-run-job
+  job_name: cx-coaching-report
+  region: europe-west1
+
+retry_config:
+  max_retry_attempts: 2
+  min_backoff_duration: 300s   # 5 minutes between retries

@@ -1,0 +1,25 @@
+# Credentials — never bake these into the image
+.env
+*.env
+*_credentials.json
+application_default_credentials.json
+service_account*.json
+*-key.json
+
+# Local outputs (large, not needed in image)
+outputs/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# Local CSV data files
+*.csv
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/

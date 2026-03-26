@@ -1,0 +1,12 @@
+pandas==2.2.3
+jinja2==3.1.4
+pyyaml==6.0.2
+click==8.1.8
+anthropic==0.40.0
+pytest==8.3.4
+
+# Google Cloud / Sheets / Drive
+gspread>=5.10.0
+google-auth>=2.20.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.90.0

@@ -1,0 +1,79 @@
+# Cloud Run Job configuration for the CX Coaching Report.
+#
+# Deploy with:
+#   # Substitute your project ID first:
+#   sed "s/\${GCP_PROJECT_ID}/YOUR_PROJECT_ID/g" deploy/cloudrun_job.yaml \
+#     | gcloud run jobs replace - --region=europe-west1
+#
+# Or use the setup script (recommended for first deploy):
+#   bash scripts/setup_gcp.sh
+#
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: cx-coaching-report
+  labels:
+    cloud.googleapis.com/location: europe-west1
+spec:
+  template:
+    spec:
+      # Number of parallel tasks — report generation is single-threaded
+      taskCount: 1
+      template:
+        spec:
+          # ── Service account ──────────────────────────────────────────────
+          serviceAccountName: coaching-report-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+
+          # ── Retry / timeout ──────────────────────────────────────────────
+          maxRetries: 1
+          timeoutSeconds: "300"
+
+          containers:
+            - image: gcr.io/${GCP_PROJECT_ID}/cx-coaching-report:latest
+              resources:
+                limits:
+                  memory: 1Gi
+                  cpu: "1"
+
+              env:
+                # ── Non-sensitive config ─────────────────────────────────
+                - name: REPORT_MARKET
+                  value: "ES"
+
+                # Change to a contact-reason substring to filter, or leave
+                # empty to include all contact reasons.
+                - name: REPORT_CONTACT_REASON
+                  value: ""
+
+                - name: GOOGLE_SHEET_TAB
+                  value: "Sheet1"
+
+                - name: DRIVE_FILENAME_MODE
+                  # "overwrite" → stable URL, BPO bookmarks once
+                  # "dated"     → new link each day, keeps history
+                  value: "overwrite"
+
+                - name: REPORT_TIMEZONE
+                  value: "Europe/Madrid"
+
+                - name: GCP_PROJECT_ID
+                  value: "${GCP_PROJECT_ID}"
+
+                # ── Sensitive config from Secret Manager ─────────────────
+                - name: GOOGLE_SHEET_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: cx-report-sheet-id
+                      key: latest
+
+                - name: DRIVE_FOLDER_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: cx-report-drive-folder-id
+                      key: latest
+
+                - name: ANTHROPIC_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: cx-report-anthropic-api-key
+                      key: latest

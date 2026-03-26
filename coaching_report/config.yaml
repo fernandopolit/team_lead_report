@@ -1,0 +1,66 @@
+# ── Data source ──────────────────────────────────────────────────────────────
+data_source:
+  type: csv
+  # Directory scanned for CSVs; the most-recently-modified file is used.
+  # Relative paths are resolved from the project root (where main.py lives).
+  csv_dir: "../"        # ← drop CSVs in the TeamLeadReport folder
+
+# ── Filters (override via CLI: --market / --contact-reason) ──────────────────
+# These are the DEFAULT values used when no CLI flags are provided.
+# To run a different contact reason or market without editing this file:
+#   python3 main.py --market MX --contact-reason "accidental order"
+#   python3 main.py --market PT --contact-reason "wrong item delivered"
+#
+# contact_reason_contains is a case-insensitive substring match against
+# contact_reason_l4 in the CSV. Use the shortest unambiguous fragment, e.g.:
+#   "check order status"      → Live Order Process - Check Order Status - …
+#   "accidental order"        → Live Order Process - Cancellation - Request: accidental order
+#   "wrong item"              → Post Order Process - Wrong Item Delivered - …
+filters:
+  country_code: "ES"
+  contact_reason_contains: null   # null = all contact reasons; or set a substring e.g. "accidental order"
+
+# ── Date range (optional; null = use all data in the CSV) ────────────────────
+date_range:
+  start: null   # "2026-03-01"
+  end:   null   # "2026-03-26"
+
+# ── Analysis thresholds ──────────────────────────────────────────────────────
+thresholds:
+  # Agents below this contact count are excluded from PRIORITY_REVIEW / TOP_PERFORMER
+  min_contacts: null          # null = use dataset median (computed at runtime)
+  min_csat_responses: null    # null = auto-scale: max(3, 20% of avg CSAT responses per agent)
+  low_csat_offset: 0.30       # overall_avg_csat - offset → PRIORITY_REVIEW ceiling
+  top_performer_offset: 0.30  # overall_avg_csat + offset → TOP_PERFORMER floor
+
+  # Vendor underperformance flag
+  underperforming_vendor_min_contacts: 20
+  underperforming_vendor_max_csat: 2.20
+
+# ── Coaching copy ─────────────────────────────────────────────────────────────
+coaching:
+  use_llm: true          # false → fall back to rule-based templates only
+  llm_model: "claude-sonnet-4-6"
+  llm_max_tokens: 1200
+  # Number of Score-1 conversation examples to surface per agent card
+  max_convo_examples: 3
+  convo_max_chars: 800   # truncate transcripts at this length
+
+# ── Abandonment classification ─────────────────────────────────────────────────
+abandonment:
+  closing_phrases:
+    - "¿puedo ayudarte con algo más"
+    - "no dudes en contactarnos"
+    - "que tengas un buen"
+    - "gracias por contactar"
+    - "en breve recibirás una encuesta"
+    - "hemos intentado ponernos en contacto"
+    - "voy a dar por terminada esta conversación"
+    - "no logramos localizarte"
+    - "is there anything else"
+    - "feel free to contact"
+
+# ── Output ────────────────────────────────────────────────────────────────────
+output:
+  dir: "outputs"
+  filename_pattern: "report_{market}_{date}.html"

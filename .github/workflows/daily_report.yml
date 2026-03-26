@@ -1,0 +1,66 @@
+name: Daily CX Coaching Report
+
+on:
+  schedule:
+    # 06:00 UTC = 07:00 Madrid (UTC+1 winter) / 08:00 Madrid (UTC+2 summer)
+    # Runs Mon–Fri. To change the time, update the cron expression below.
+    # Cron helper: https://crontab.guru
+    - cron: '0 6 * * 1-5'
+
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Market filter (e.g. ES, MX)'
+        required: false
+        default: ''
+      contact_reason:
+        description: 'Contact reason substring filter (leave blank for all)'
+        required: false
+        default: ''
+
+jobs:
+  generate-report:
+    name: Generate and deliver report
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: coaching_report/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r coaching_report/requirements.txt
+
+      - name: Write Google credentials
+        # Writes OAuth ADC credentials to a temp file.
+        # The secret is masked in logs by GitHub automatically.
+        run: |
+          mkdir -p /tmp/gcloud
+          echo '${{ secrets.GOOGLE_ADC_CREDENTIALS }}' > /tmp/gcloud/application_default_credentials.json
+
+      - name: Generate and deliver report
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud/application_default_credentials.json
+          GOOGLE_SHEET_ID:    ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEET_TAB:   ${{ vars.GOOGLE_SHEET_TAB || 'Sheet1' }}
+          DRIVE_FOLDER_ID:    ${{ secrets.DRIVE_FOLDER_ID }}
+          DRIVE_FILENAME_MODE: ${{ vars.DRIVE_FILENAME_MODE || 'overwrite' }}
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          REPORT_MARKET:         ${{ github.event.inputs.market || vars.REPORT_MARKET || 'ES' }}
+          REPORT_CONTACT_REASON: ${{ github.event.inputs.contact_reason || vars.REPORT_CONTACT_REASON || '' }}
+          REPORT_TIMEZONE:       ${{ vars.REPORT_TIMEZONE || 'Europe/Madrid' }}
+        run: |
+          cd coaching_report
+          python main.py --source sheets
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -rf /tmp/gcloud
