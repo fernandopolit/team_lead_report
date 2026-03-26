@@ -41,10 +41,16 @@ jobs:
 
       - name: Write Google credentials
         # Writes OAuth ADC credentials to a temp file.
-        # The secret is masked in logs by GitHub automatically.
+        # Uses python to parse and re-serialise the JSON so any accidental
+        # whitespace or trailing characters in the secret are stripped cleanly.
         run: |
           mkdir -p /tmp/gcloud
-          echo '${{ secrets.GOOGLE_ADC_CREDENTIALS }}' > /tmp/gcloud/application_default_credentials.json
+          python3 -c "
+          import json, sys
+          raw = '''${{ secrets.GOOGLE_ADC_CREDENTIALS }}'''
+          data = json.loads(raw)
+          print(json.dumps(data, indent=2))
+          " > /tmp/gcloud/application_default_credentials.json
 
       - name: Generate and deliver report
         env:
