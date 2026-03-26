@@ -40,17 +40,20 @@ jobs:
         run: pip install -r coaching_report/requirements.txt
 
       - name: Write Google credentials
-        # Writes OAuth ADC credentials to a temp file.
-        # Uses python to parse and re-serialise the JSON so any accidental
-        # whitespace or trailing characters in the secret are stripped cleanly.
+        # Pass the secret as an env var — never interpolate JSON directly into
+        # shell/python code as it breaks on curly braces and quotes.
+        env:
+          ADC_JSON: ${{ secrets.GOOGLE_ADC_CREDENTIALS }}
         run: |
           mkdir -p /tmp/gcloud
           python3 -c "
-          import json, sys
-          raw = '''${{ secrets.GOOGLE_ADC_CREDENTIALS }}'''
+          import json, os
+          raw = os.environ['ADC_JSON']
           data = json.loads(raw)
-          print(json.dumps(data, indent=2))
-          " > /tmp/gcloud/application_default_credentials.json
+          with open('/tmp/gcloud/application_default_credentials.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          print('Credentials written successfully')
+          "
 
       - name: Generate and deliver report
         env:
