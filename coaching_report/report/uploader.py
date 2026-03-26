@@ -41,9 +41,10 @@ def _get_credentials():
 
 def drive_filename(market: str, run_date: date, mode: str = "overwrite") -> str:
     """Return the Drive filename based on the configured mode."""
+    date_str = run_date.strftime("%Y%m%d")
     if mode == "dated":
-        return f"CX_Coaching_Report_{market}_{run_date.strftime('%Y%m%d')}.html"
-    return f"CX_Coaching_Report_{market}.html"
+        return f"MX_Coaching_Report_{market}_{date_str}.html"
+    return f"MX_Coaching_Report_{market}.html"
 
 
 def upload_to_drive(
