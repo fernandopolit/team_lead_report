@@ -123,12 +123,13 @@ def _run(
         or cfg["filters"]["country_code"]
     ).upper()
 
-    reason = (
+    _raw_reason = (
         contact_reason
         or os.environ.get("REPORT_CONTACT_REASON")
         or cfg["filters"].get("contact_reason_contains")
-        or None
     )
+    # Treat empty string or the literal string "None" (common GitHub var mistake) as no filter
+    reason = _raw_reason if _raw_reason and _raw_reason.strip().lower() not in ("none", "") else None
 
     date_start = start or cfg["date_range"].get("start")
     date_end = end or cfg["date_range"].get("end")
