@@ -117,16 +117,16 @@ def _run(
     cfg = load_config(config_path)
 
     # ── Resolve settings: CLI > env vars > config.yaml ───────────────────────
-    # Market is resolved after loading data so it can be auto-detected if unset
+    # Market: only CLI flag or REPORT_MARKET env var count as an explicit override.
+    # config.yaml country_code is intentionally excluded here so that when neither
+    # is set the market is auto-detected from the data after loading.
+    _raw_market = market or os.environ.get("REPORT_MARKET")
+    # Treat empty string or literal "None" (common GitHub var mistake) as unset
     _market_override = (
-        market
-        or os.environ.get("REPORT_MARKET")
-        or cfg["filters"].get("country_code")
-        or None
+        _raw_market.strip().upper()
+        if _raw_market and _raw_market.strip().lower() not in ("none", "")
+        else None
     )
-    # Treat empty string or literal "None" as no override (auto-detect from data)
-    if _market_override and _market_override.strip().lower() in ("none", ""):
-        _market_override = None
 
     _raw_reason = (
         contact_reason
