@@ -117,11 +117,16 @@ def _run(
     cfg = load_config(config_path)
 
     # ── Resolve settings: CLI > env vars > config.yaml ───────────────────────
-    market = (
+    # Market is resolved after loading data so it can be auto-detected if unset
+    _market_override = (
         market
         or os.environ.get("REPORT_MARKET")
-        or cfg["filters"]["country_code"]
-    ).upper()
+        or cfg["filters"].get("country_code")
+        or None
+    )
+    # Treat empty string or literal "None" as no override (auto-detect from data)
+    if _market_override and _market_override.strip().lower() in ("none", ""):
+        _market_override = None
 
     _raw_reason = (
         contact_reason
@@ -175,6 +180,21 @@ def _run(
         click.echo(f"   Latest CSV: {src_label}")
 
     click.echo(f"   Rows loaded: {len(df):,}")
+
+    # ── Auto-detect market from data if not explicitly set ────────────────────
+    if _market_override:
+        market = _market_override.upper()
+    else:
+        country_counts = df["country_code"].str.upper().value_counts()
+        if len(country_counts) == 1:
+            market = country_counts.index[0]
+            click.echo(f"   Auto-detected market: {market}")
+        else:
+            market = country_counts.index[0]
+            click.echo(
+                f"   Multiple markets in data: {list(country_counts.index)} "
+                f"— using most common: {market}"
+            )
 
     # ── Filter ────────────────────────────────────────────────────────────────
     reason_label = f"'{reason}'" if reason else "all contact reasons"
