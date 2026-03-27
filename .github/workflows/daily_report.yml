@@ -63,7 +63,7 @@ jobs:
           DRIVE_FOLDER_ID:    ${{ secrets.DRIVE_FOLDER_ID }}
           DRIVE_FILENAME_MODE: ${{ vars.DRIVE_FILENAME_MODE || 'overwrite' }}
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
-          REPORT_MARKET:         ${{ github.event.inputs.market || vars.REPORT_MARKET || 'ES' }}
+          REPORT_MARKET:         ${{ github.event.inputs.market || vars.REPORT_MARKET || '' }}
           REPORT_CONTACT_REASON: ${{ github.event.inputs.contact_reason || vars.REPORT_CONTACT_REASON || '' }}
           REPORT_TIMEZONE:       ${{ vars.REPORT_TIMEZONE || 'Europe/Madrid' }}
         run: |
